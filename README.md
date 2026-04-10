@@ -18,7 +18,7 @@ Restart when prompted. This installs Ubuntu by default.
 
 Open your WSL terminal and run:
 ```bash
-cd /mnt/c/Users/datog/OneDrive/Desktop/git/CS143
+cd /mnt/c/path/to/CS143-Compilers
 bash setup-wsl.sh
 source ~/.bashrc
 ```
@@ -29,7 +29,7 @@ Tools are installed to `/usr/class/bin/`.
 ### Step 3 — Compile and run PA1
 
 ```bash
-cd /mnt/c/Users/datog/OneDrive/Desktop/git/CS143/assignments/PA1
+cd /mnt/c/path/to/CS143-Compilers/assignments/PA1
 coolc stack.cl atoi.cl        # compile → stack.s
 spim -file stack.s            # run interactively
 gmake test                    # run against stack.test and diff with reference
