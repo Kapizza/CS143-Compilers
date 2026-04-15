@@ -1,0 +1,11 @@
+# Broken symlinks pointing to Linux course server paths
+handle_flags.cc
+lextest.cc
+stringtab.cc
+utilities.cc
+
+# Build artifacts
+*.o
+*.d
+cool-lex.cc
+lexer
