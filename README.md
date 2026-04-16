@@ -36,6 +36,15 @@ gmake test                    # run against stack.test and diff with reference
 # Note: CLASSDIR is set to /usr/class in the Makefile
 ```
 
+### Step 4 — Compile and run PA2
+
+```bash
+cd /mnt/c/path/to/CS143-Compilers/assignments/PA2
+make lexer                    # build the lexer via flex + g++
+./lexer test.cl               # lex a Cool source file and print tokens
+make dotest                   # run lexer on test.cl via Makefile target
+```
+
 ---
 
 ## Assignments
@@ -43,4 +52,41 @@ gmake test                    # run against stack.test and diff with reference
 | # | Topic | Source |
 |---|-------|--------|
 | PA1 | Stack machine interpreter in Cool | [assignments/PA1/](assignments/PA1/) |
-| PA2 | Lexical analysis |Coming Soon! |
+| PA2 | Lexical analyzer (flex) | [assignments/PA2/](assignments/PA2/) |
+
+---
+
+## PA2 — Lexical Analyzer
+
+Implemented in [assignments/PA2/cool.flex](assignments/PA2/cool.flex) using flex.
+
+### Design
+
+**Comments**
+- Block comments `(* ... *)` use an exclusive `COMMENT` start condition with a `comment_depth` counter to support arbitrary nesting.
+- Line comments `--` are handled by a single regex that consumes the rest of the line.
+- An unmatched `*)` outside any comment returns an `ERROR` token.
+
+**Keywords**
+- All 16 Cool keywords are matched case-insensitively using per-character `[aA]`-style alternations.
+- `true` and `false` are special: only matched when the first letter is lowercase (per the Cool spec), using `t[rR][uU][eE]` / `f[aA][lL][sS][eE]`.
+- Because keywords are listed before the identifier rules, flex's longest-match rule ensures `classX` becomes `OBJECTID` while `class ` becomes `CLASS`.
+
+**Identifiers**
+- Type identifiers (`TYPEID`) begin with an uppercase letter: `[A-Z]{ALNUM}*`.
+- Object identifiers (`OBJECTID`) begin with a lowercase letter: `[a-z]{ALNUM}*`.
+
+**Strings**
+- An exclusive `STRING` start condition collects characters into `string_buf` (max 1025 bytes).
+- Escape sequences `\n`, `\t`, `\b`, `\f`, `\\`, `\"` are translated; any other `\c` maps to `c`.
+- Escaped newline `\\\n` counts as a literal newline in the string and increments `curr_lineno`.
+- Errors (null byte, string too long, unterminated, EOF inside string) set a `string_error` flag so cascading errors are suppressed until the closing quote.
+
+**Error recovery**
+- Any unrecognized character falls through to the catch-all rule and is returned as `ERROR` with the character as the message.
+
+### Test cases (`test.cl`)
+The provided `test.cl` is a cellular automaton program containing several intentional lexical errors:
+- Single-quoted character literal (`'.'`) — not valid in Cool.
+- `num_cells[]` — square brackets are not valid Cool syntax.
+- Unclosed `let` / `while` — the missing closing paren and `}` mean EOF is reached inside a string or block.
