@@ -1,0 +1,51 @@
+README file for Programming Assignment 3 (C++ edition)
+======================================================
+
+## Files
+
+- cool.y         : Bison grammar specification for the Cool parser
+- good.cl        : Tests all legal grammar constructions
+- bad.cl         : Tests parsing errors and error recovery
+- Makefile       : Build configuration (DO NOT MODIFY)
+- README         : This file
+
+## Design Decisions
+
+### Grammar Structure
+
+The grammar follows the Cool Reference Manual syntax closely.
+Productions are left-recursive wherever possible, as bison prefers
+left-recursive rules.
+
+### Let Ambiguity
+
+The `let` construct is inherently ambiguous. The manual resolves this
+by saying a `let` expression extends as far to the right as possible.
+This is implemented using:
+- A `trailing_let` non-terminal for comma-separated bindings
+- A `%prec EXTEND_EXPR` directive (highest precedence) on let rules
+  so the parser always shifts rather than reduces
+
+### Precedence
+
+Operator precedence (low to high):
+  ASSIGN, NOT, <=/<//=, +/-, *//, isvoid, ~, @, .
+
+### Error Recovery
+
+The parser recovers from errors in:
+1. **Class definitions**: `error ';'` in class_list — resumes at next class
+2. **Features**: `error ';'` in feature_list — resumes at next feature
+3. **Let bindings**: `error trailing_let` and `error IN expr` — resumes at next binding
+4. **Block expressions**: `error ';'` in semi_colon_separated_expr_list — resumes at next expression
+
+## Testing
+
+Run on valid input:
+  % myparser good.cl
+
+Run on invalid input:
+  % myparser bad.cl
+
+Run both:
+  % make dotest

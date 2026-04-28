@@ -49,10 +49,23 @@ make dotest                   # run lexer on test.cl via Makefile target
 
 ## Assignments
 
-| # | Topic | Source |
-|---|-------|--------|
+| # | Topic | Directory |
+|---|-------|-----------|
 | PA1 | Stack machine interpreter in Cool | [assignments/PA1/](assignments/PA1/) |
 | PA2 | Lexical analyzer (flex) | [assignments/PA2/](assignments/PA2/) |
+| PA3 | Parser (bison) | [assignments/PA3/](assignments/PA3/) |
+
+---
+
+## Acknowledgments
+
+**Assignment specification PDFs** (PA1.pdf, PA2.pdf, PA3.pdf) are from the official
+[Stanford CS143 course](https://web.stanford.edu/class/cs143/) and are included here
+for reference only. All rights belong to Stanford University.
+
+**Starter/skeleton files** (Makefiles, skeleton `.y`, `.flex`, `.cl`, support headers) are the
+official course-provided starting files from Stanford CS143, mirrored at
+[rsanders/coursera-cs143-mac](https://github.com/rsanders/coursera-cs143-mac).
 
 ---
 
