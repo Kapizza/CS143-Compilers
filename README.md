@@ -45,6 +45,16 @@ make lexer                    # build the lexer via flex + g++
 make dotest                   # run lexer on test.cl via Makefile target
 ```
 
+### Step 5 — Compile and run PA3
+
+```bash
+cd /mnt/c/path/to/CS143-Compilers/assignments/PA3
+make parser LIB=''            # build the parser (yywrap is a macro, -lfl not needed)
+./myparser good.cl            # parse a valid Cool file and print the AST
+./myparser bad.cl             # parse an invalid file and print error messages
+make dotest                   # run both test files via Makefile target
+```
+
 ---
 
 ## Assignments
@@ -103,3 +113,73 @@ The provided `test.cl` is a cellular automaton program containing several intent
 - Single-quoted character literal (`'.'`) — not valid in Cool.
 - `num_cells[]` — square brackets are not valid Cool syntax.
 - Unclosed `let` / `while` — the missing closing paren and `}` mean EOF is reached inside a string or block.
+
+---
+
+## PA3 — Parser
+
+Implemented in [assignments/PA3/cool.y](assignments/PA3/cool.y) using Bison.
+
+### Design
+
+**Grammar structure**
+
+Non-terminals added on top of the skeleton:
+
+| Non-terminal | Description |
+|---|---|
+| `feature_list` / `feature` | Class body: methods and attributes |
+| `formal_list` / `formal` | Comma-separated parameter lists (possibly empty) |
+| `case_list` / `case_branch` | One or more typed `case` branches |
+| `block_list` | Semicolon-terminated expression sequences inside `{ }` |
+| `actuals` | Comma-separated argument lists (possibly empty) |
+| `let_body` | Recursive let binding list plus the body expression |
+| `expression` | All 20+ Cool expression forms |
+
+All list rules are left-recursive (Bison preference).
+
+**Operator precedence** (lowest → highest)
+
+| Level | Operator(s) | Associativity |
+|---|---|---|
+| 1 | `in` (let body delimiter) | non-assoc |
+| 2 | `<-` | right |
+| 3 | `not` | left |
+| 4 | `<` `=` `<=` | non-assoc |
+| 5 | `+` `-` | left |
+| 6 | `*` `/` | left |
+| 7 | `isvoid` | left |
+| 8 | `~` | left |
+| 9 | `@` | left |
+| 10 | `.` | left |
+
+**Let ambiguity**
+
+The Cool manual states that a `let` expression extends as far to the right as possible.
+This is implemented via a separate `let_body` non-terminal that recursively consumes
+additional comma-separated bindings before reaching the `in` clause.
+Declaring `IN` at the lowest precedence level means every operator outranks it, so
+Bison always shifts an operator into the body rather than reducing early.
+The grammar compiles with **0 shift/reduce and 0 reduce/reduce conflicts**.
+
+**Error recovery**
+
+| Location | Rule |
+|---|---|
+| Class list | `class_list : class_list error ';'` |
+| Class header | `class : CLASS error '{' … '}'` and `CLASS TYPEID INHERITS error '{' … '}'` |
+| Feature list | `feature_list : feature_list error ';'` |
+| Block expression | `block_list : block_list error ';'` |
+| Let binding | `let_body : error IN expression` and `error ',' let_body` |
+
+### Test cases
+
+`good.cl` exercises every legal grammar construct: classes with and without inheritance,
+attributes (with and without initializers), methods with multiple formals, all expression
+forms (assignment, self/dynamic/static dispatch, if/while/case/let, block, new, isvoid,
+all arithmetic and comparison operators, `not`, `~`, parenthesized expressions, and all
+atom types).
+
+`bad.cl` exercises error recovery: lowercase class/parent name, misspelled keyword,
+missing closing brace, missing feature semicolon, malformed let binding, and a block
+expression missing its semicolon.

@@ -13,31 +13,62 @@ README file for Programming Assignment 3 (C++ edition)
 
 ### Grammar Structure
 
-The grammar follows the Cool Reference Manual syntax closely.
-Productions are left-recursive wherever possible, as bison prefers
-left-recursive rules.
+The grammar follows the Cool Reference Manual syntax. All list rules are
+left-recursive (bison preference). Non-terminals added:
+
+  feature_list   — zero or more semicolon-terminated features
+  feature        — method or attribute definition
+  formal_list    — comma-separated formals, possibly empty
+  formal         — id : Type
+  case_list      — one or more case branches
+  case_branch    — id : Type => expr ;
+  block_list     — one or more semicolon-terminated expressions
+  actuals        — comma-separated argument expressions, possibly empty
+  let_body       — one let binding, with optional initializer and optional
+                   continuation via comma (more bindings) or IN (body)
+  expression     — all Cool expressions
 
 ### Let Ambiguity
 
-The `let` construct is inherently ambiguous. The manual resolves this
-by saying a `let` expression extends as far to the right as possible.
-This is implemented using:
-- A `trailing_let` non-terminal for comma-separated bindings
-- A `%prec EXTEND_EXPR` directive (highest precedence) on let rules
-  so the parser always shifts rather than reduces
+Cool's let extends as far to the right as possible. This is implemented
+with a separate `let_body` non-terminal that recursively consumes
+additional comma-separated bindings before reaching the IN clause.
+Within the body expression, bison's default shift preference ensures
+operators extend the body rightward rather than terminating it.
 
-### Precedence
+### Precedence (lowest to highest)
 
-Operator precedence (low to high):
-  ASSIGN, NOT, <=/<//=, +/-, *//, isvoid, ~, @, .
+  <- (right-assoc)
+  not
+  < = <=  (non-associative)
+  + -
+  * /
+  isvoid
+  ~
+  @
+  .
 
 ### Error Recovery
 
-The parser recovers from errors in:
-1. **Class definitions**: `error ';'` in class_list — resumes at next class
-2. **Features**: `error ';'` in feature_list — resumes at next feature
-3. **Let bindings**: `error trailing_let` and `error IN expr` — resumes at next binding
-4. **Block expressions**: `error ';'` in semi_colon_separated_expr_list — resumes at next expression
+1. **Class list** — `class_list : class_list error ';'`
+   Discards tokens through the next ';', allowing the parser to restart
+   at the following class definition.
+
+2. **Class header** — `class : CLASS error '{' feature_list '}' ';'`
+   Recovers when the class name or parent name is syntactically wrong
+   while the class body and closing ';' are still present.
+
+3. **Feature list** — `feature_list : feature_list error ';'`
+   Skips a bad feature and continues with the next one.
+
+4. **Block** — `block_list : error ';'`
+   Discards a bad expression inside a block and continues at the
+   next semicolon.
+
+5. **Let bindings** — `let_body : error IN expression`
+                       `let_body : error ',' let_body`
+   Recovers from a malformed binding, continuing at the body or
+   the next binding.
 
 ## Testing
 
